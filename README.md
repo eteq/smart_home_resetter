@@ -4,9 +4,9 @@ Cable modem and wifi are 12V, which is also arduino-compatible.  Plugs are all t
 
 ## Current measurements
 
-* cable modem: 0.45 - 0.52 A - wallwart rated to ?A
+* cable modem: 0.45 - 0.52 A - wallwart rated to 1A
 * dowstairs router: 0.3 - 0.6 A (testing with data send that peaked at a reasonable fraction of network capacity) - wallwart rated to 2.5A
-* main router: 0.4 - 0.7 A (testing with data send that peaked at a reasonable fraction of network capacity, includes firmware flashing) - wallwart rated to ?A
+* main router: 0.4 - 0.7 A (testing with data send that peaked at a reasonable fraction of network capacity, includes firmware flashing) - wallwart rated to  1.5A
 
 Implies that 2.5A wallwart is fine with modem + router upstairs, 1.5A fine with downstairs router.
 
