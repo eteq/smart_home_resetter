@@ -26,6 +26,7 @@ def main(serialport: Path = typer.Argument(...,
         resolve_path=True),
         baudrate: int = typer.Option(115200),
         process_wait_time: float = typer.Option(1),
+        internet_wait_time: float = typer.Option(1),
         verbose: bool = False
     ):
     procs = {}  # Popen objects for child processes
@@ -39,8 +40,8 @@ def main(serialport: Path = typer.Argument(...,
             if line:
                 if line.endswith(b'\n'):
                     line = (lastline + line).strip()
-                    if line == b'status':
-                        reply_status(ser, verbose, procs)
+                    if line == b'inet_status':
+                        reply_status(ser, verbose, procs, internet_wait_time)
                     elif line == b'on':
                         hass_on(hasspath, verbose, procs, process_wait_time)
                     elif line == b'off':
@@ -51,14 +52,14 @@ def main(serialport: Path = typer.Argument(...,
                     lastline = line
 
 
-def reply_status(ser, verbose, procs):
-    if check_internet(verbose):
+def reply_status(ser, verbose, procs, internet_wait_time):
+    if check_internet(verbose, internet_wait_time):
         retval = 1
     else:
         retval = 0
     if verbose:
         typer.echo(f'Got status request, returning {retval}')
-    ser.write(str(retval).encode('ascii') + b'\r\n')
+    ser.write(str(retval).encode('ascii') + b'\n')
 
 
 def hass_on(hasspath, verbose, procs, process_wait_time):
@@ -96,6 +97,7 @@ def check_internet(verbose, timeout):
     if verbose:
         typer.echo(f'Checking for internet')
     p = Process(target=_mp_do_internet_check)
+    p.start()
     p.join(timeout)
     if p.is_alive():
         p.kill()
