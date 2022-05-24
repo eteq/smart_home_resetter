@@ -3,11 +3,9 @@
 #define RELAY_PIN 2
 
 #define DELAY_INET_MS 500
-#define DELAY_HASS_MS 250
+#define DELAY_HASS_MS 200
 
-
-
-#define SKIP_RELAY
+//#define SKIP_RELAY
 
 bool wasoff = false;
 
@@ -53,7 +51,10 @@ void loop() {
 void net_then_hass_startup_sequence() {
     bool netup = false;
 
+    Serial.setTimeout(DELAY_INET_MS);
+
     while (!netup) {
+
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
 
         Serial.println("inet_status");
@@ -65,11 +66,9 @@ void net_then_hass_startup_sequence() {
         } else if (res == "0") {
             //not up
             netup = false;
-            delay(DELAY_INET_MS);
         } else {
-            //ambiguous, assume not up to repeat but with a shorter delay
+            //ambiguous, just try again, although maybe this should try a longer delay?
             netup = false;
-            delay(DELAY_INET_MS/5);
         }
     }
     Serial.println("on");

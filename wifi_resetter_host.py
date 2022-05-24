@@ -26,7 +26,7 @@ def main(serialport: Path = typer.Argument(...,
         resolve_path=True),
         baudrate: int = typer.Option(115200),
         process_wait_time: float = typer.Option(1),
-        internet_wait_time: float = typer.Option(1),
+        internet_wait_time: float = typer.Option(0.4),
         verbose: bool = False
     ):
     procs = {}  # Popen objects for child processes
