@@ -116,7 +116,7 @@ void hass_startup() {
         unsigned long loopstart = millis();
 
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-        if (millis() - hass_restart_ms < MIN_HASS_RESTART_MS) { // don't hassle the computer until at least this long has passed.  It's trying, ok?!
+        if ((millis() - hass_restart_ms) > MIN_HASS_RESTART_MS) { // don't hassle the computer until at least this long has passed.  It's trying, ok?!
             Serial.println("hass_status");
             read_result = Serial.readStringUntil('\n');
 
