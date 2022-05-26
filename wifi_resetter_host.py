@@ -1,7 +1,9 @@
 import sys
 import time
+import json
 import subprocess
-from urllib.request import urlopen
+from urllib import request
+from urllib.error import HTTPError
 from pathlib import Path
 from typing import Optional
 from multiprocessing import Process
@@ -42,6 +44,8 @@ def main(serialport: Path = typer.Argument(...,
                     line = (lastline + line).strip()
                     if line == b'inet_status':
                         reply_status(ser, verbose, procs, internet_wait_time)
+                    if line == b'hass_status':
+                        reply_hass_status(ser, verbose)
                     elif line == b'on':
                         hass_on(hasspath, verbose, procs, process_wait_time)
                     elif line == b'off':
@@ -59,6 +63,45 @@ def reply_status(ser, verbose, procs, internet_wait_time):
         retval = 0
     if verbose:
         typer.echo(f'Got status request, returning {retval}')
+    ser.write(str(retval).encode('ascii') + b'\n')
+
+
+auth_token = []
+def reply_hass_status(ser, verbose):
+    retval = None
+
+    # get the authorization token from the file if it hasn't yet been loaded
+    if not auth_token:
+        if Path('hass_auth_token').is_file():
+            with open('hass_auth_token') as f:
+                auth_token.append(f.read().strip())
+        else:
+            auth_token.append(None)
+
+    headers = {"content-type": "application/json"}
+    if auth_token and auth_token[0] is not None:
+        headers['Authorization'] = "Bearer " + auth_token[0]
+
+    req = request.Request('http://localhost:8123/api/config', headers=headers)
+    try:
+        u = request.urlopen(req)
+    except HTTPError as e:
+        if e.status == 401:
+            typer.secho('Unauthorized! Need to fix token. Proceeding hoping its up.', fg=typer.colors.RED, bold=True)
+            retval = 1
+        u = None
+    except Exception as e:
+        if verbose:
+            typer.secho('url request did not complete to hass API server - maybe still turning on?')
+        retval = 0
+        u = None
+
+    if u is not None:
+        j = json.loads(u.read())
+        retval = j['state'] == 'RUNNING'
+
+    if verbose:
+        typer.echo(f'Got hass status request, returning {retval}')
     ser.write(str(retval).encode('ascii') + b'\n')
 
 
@@ -113,7 +156,7 @@ def check_internet(verbose, timeout):
 
 def _mp_do_internet_check():
     try:
-        res = urlopen('http://www.example.com')
+        res = request.urlopen('http://www.example.com')
     except:
         sys.exit(1)
     if res.status == 200:
