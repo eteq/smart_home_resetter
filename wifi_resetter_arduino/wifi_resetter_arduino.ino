@@ -5,6 +5,7 @@
 
 #define DELAY_INET_MS 500
 #define DELAY_HASS_MS 150
+#define MIN_HASS_RESTART_MS 10000
 
 //#define SKIP_RELAY
 
@@ -91,7 +92,7 @@ void net_then_hass_startup_sequence() {
             //ambiguous, just try again, although maybe this should try a longer delay?
             netup = false;
         }
-        
+
         unsigned long dt = (millis() - loopstart);
         if (dt < DELAY_INET_MS) {
             delay(DELAY_INET_MS - dt);
@@ -108,23 +109,27 @@ void hass_startup() {
     // start hass
     Serial.println("on");
     Serial.setTimeout(DELAY_HASS_MS);
+    unsigned long hass_restart_ms = millis();
+
     
     while (!hassup) {
         unsigned long loopstart = millis();
 
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-        Serial.println("hass_status");
-        read_result = Serial.readStringUntil('\n');
+        if (millis() - hass_restart_ms < MIN_HASS_RESTART_MS) { // don't hassle the computer until at least this long has passed.  It's trying, ok?!
+            Serial.println("hass_status");
+            read_result = Serial.readStringUntil('\n');
 
-        if (read_result == "1") {
-            // hass is up!
-            hassup = true;
-        } else if (read_result == "0") {
-            //not up
-            hassup = false;
-        } else {
-            //ambiguous, just try again, although maybe this should try a longer delay?
-            hassup = false;
+            if (read_result == "1") {
+                // hass is up!
+                hassup = true;
+            } else if (read_result == "0") {
+                //not up
+                hassup = false;
+            } else {
+                //ambiguous, just try again, although maybe this should try a longer delay?
+                hassup = false;
+            }
         }
 
         unsigned long dt = (millis() - loopstart);
