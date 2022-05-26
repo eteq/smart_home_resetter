@@ -74,6 +74,7 @@ void net_then_hass_startup_sequence() {
     Serial.setTimeout(DELAY_INET_MS);
 
     while (!netup) {
+        unsigned long loopstart = millis();
 
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
 
@@ -90,6 +91,11 @@ void net_then_hass_startup_sequence() {
             //ambiguous, just try again, although maybe this should try a longer delay?
             netup = false;
         }
+        
+        unsigned long dt = (millis() - loopstart);
+        if (dt < DELAY_INET_MS) {
+            delay(DELAY_INET_MS - dt);
+        }
     }
 
     hass_startup();
@@ -101,10 +107,12 @@ void hass_startup() {
 
     // start hass
     Serial.println("on");
+    Serial.setTimeout(DELAY_HASS_MS);
     
     while (!hassup) {
+        unsigned long loopstart = millis();
+
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-        Serial.setTimeout(DELAY_HASS_MS);
         Serial.println("hass_status");
         read_result = Serial.readStringUntil('\n');
 
@@ -117,6 +125,11 @@ void hass_startup() {
         } else {
             //ambiguous, just try again, although maybe this should try a longer delay?
             hassup = false;
+        }
+
+        unsigned long dt = (millis() - loopstart);
+        if (dt < DELAY_HASS_MS) {
+            delay(DELAY_HASS_MS - dt);
         }
     }
     digitalWrite(LED_PIN, LOW);
