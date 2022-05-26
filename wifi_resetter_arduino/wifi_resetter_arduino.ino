@@ -1,18 +1,21 @@
 #define LED_PIN 8
 #define SWITCH_PIN 7
+#define HASS_SWITCH_PIN 14 // 14 = A0
 #define RELAY_PIN 2
 
 #define DELAY_INET_MS 500
-#define DELAY_HASS_MS 200
+#define DELAY_HASS_MS 150
 
 //#define SKIP_RELAY
 
 bool wasoff = false;
+bool wasoff_hass = false;
 
 void setup() {
     digitalWrite(LED_BUILTIN, LOW);
 
-    pinMode(SWITCH_PIN, INPUT_PULLUP);  
+    pinMode(SWITCH_PIN, INPUT_PULLUP);
+    pinMode(HASS_SWITCH_PIN, INPUT_PULLUP);
 
     pinMode(LED_PIN, OUTPUT);  
     digitalWrite(LED_PIN, LOW);
@@ -45,10 +48,27 @@ void loop() {
             wasoff = false;
         }
     }
+    
+    if (digitalRead(HASS_SWITCH_PIN) == LOW) {
+        digitalWrite(LED_PIN, HIGH);
+
+        if (!wasoff_hass) {
+            Serial.println("off");
+            wasoff_hass = true;
+        }
+    } else {
+        digitalWrite(LED_PIN, LOW);
+
+        if (wasoff_hass) {
+            hass_startup();
+            wasoff_hass = false;
+        }
+    }
     delay(10);
 }
 
 void net_then_hass_startup_sequence() {
+    String read_result;
     bool netup = false;
 
     Serial.setTimeout(DELAY_INET_MS);
@@ -58,12 +78,12 @@ void net_then_hass_startup_sequence() {
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
 
         Serial.println("inet_status");
-        String res = Serial.readStringUntil('\n');
+        read_result = Serial.readStringUntil('\n');
         
-        if (res == "1") {
+        if (read_result == "1") {
             // internet is up!
             netup = true;
-        } else if (res == "0") {
+        } else if (read_result == "0") {
             //not up
             netup = false;
         } else {
@@ -71,11 +91,33 @@ void net_then_hass_startup_sequence() {
             netup = false;
         }
     }
+
+    hass_startup();
+}
+
+void hass_startup() {
+    String read_result;
+    bool hassup = false;
+
+    // start hass
     Serial.println("on");
-    for (int i=0; i < 3; i++) {
-         digitalWrite(LED_PIN, HIGH);
-        delay(DELAY_HASS_MS/2);
-         digitalWrite(LED_PIN, LOW);
-        delay(DELAY_HASS_MS/2);
+    
+    while (!hassup) {
+        digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+        Serial.setTimeout(DELAY_HASS_MS);
+        Serial.println("hass_status");
+        read_result = Serial.readStringUntil('\n');
+
+        if (read_result == "1") {
+            // hass is up!
+            hassup = true;
+        } else if (read_result == "0") {
+            //not up
+            hassup = false;
+        } else {
+            //ambiguous, just try again, although maybe this should try a longer delay?
+            hassup = false;
+        }
     }
+    digitalWrite(LED_PIN, LOW);
 }
