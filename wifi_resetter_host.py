@@ -98,7 +98,7 @@ def reply_hass_status(ser, verbose):
 
     if u is not None:
         j = json.loads(u.read())
-        retval = j['state'] == 'RUNNING'
+        retval = int(j['state'] == 'RUNNING')
 
     if verbose:
         typer.echo(f'Got hass status request, returning {retval}')
@@ -110,10 +110,10 @@ def hass_on(hasspath, verbose, procs, process_wait_time):
     if verbose:
         typer.echo(f'Got on with home assistant path {hasspath}')
     while 'on' in procs and procs['on'].poll() is None:
-        typer.echo("on proc still running. Waiting for completion", fg=typer.colors.YELLOW, bold=True)
+        typer.secho("on proc still running. Waiting for completion", fg=typer.colors.YELLOW, bold=True)
         time.sleep(process_wait_time)
     while 'off' in procs and procs['off'].poll() is None:
-        typer.echo("off proc still running. Waiting for completion", fg=typer.colors.YELLOW, bold=True)
+        typer.secho("off proc still running. Waiting for completion", fg=typer.colors.YELLOW, bold=True)
         time.sleep(process_wait_time)
     procs['on'] = subprocess.Popen('docker compose up -d', shell=True, cwd=hasspath)
 
